@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stretch Plan</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --lower: #0e8a7a;
+    --upper: #3a7ae8;
+    --cycling: #2daa6e;
+    --rest: #7c5cbf;
+    --bg: #f7f4ef;
+    --card: #ffffff;
+    --text: #1a1a1a;
+    --muted: #888;
+    --radius: 16px;
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 0 0 60px;
+  }
+
+  header {
+    padding: 36px 24px 16px;
+    text-align: center;
+  }
+
+  header h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 2rem;
+    letter-spacing: -0.5px;
+    line-height: 1.1;
+  }
+
+  header p {
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+    font-weight: 300;
+  }
+
+  .tabs {
+    display: flex;
+    gap: 6px;
+    padding: 0 12px;
+    margin: 16px 0 20px;
+    justify-content: center;
+  }
+
+  .tab {
+    flex: 1;
+    max-width: 110px;
+    padding: 9px 4px;
+    border-radius: 50px;
+    border: 2px solid transparent;
+    background: var(--card);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    letter-spacing: 0.2px;
+  }
+
+  .tab.lower   { color: var(--lower);   border-color: var(--lower); }
+  .tab.upper   { color: var(--upper);   border-color: var(--upper); }
+  .tab.cycling { color: var(--cycling); border-color: var(--cycling); }
+  .tab.rest    { color: var(--rest);    border-color: var(--rest); }
+  .tab.lower.active   { background: var(--lower);   color: white; }
+  .tab.upper.active   { background: var(--upper);   color: white; }
+  .tab.cycling.active { background: var(--cycling); color: white; }
+  .tab.rest.active    { background: var(--rest);    color: white; }
+
+  .panel { display: none; padding: 0 14px; }
+  .panel.active { display: block; }
+
+  .phase-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 0 6px;
+    margin: 22px 0 8px;
+  }
+
+  .stretch-card {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .stretch-card::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 4px;
+  }
+
+  .lower-panel   .stretch-card::before { background: var(--lower); }
+  .upper-panel   .stretch-card::before { background: var(--upper); }
+  .cycling-panel .stretch-card::before { background: var(--cycling); }
+  .rest-panel    .stretch-card::before { background: var(--rest); }
+
+  .stretch-card.done { opacity: 0.5; }
+
+  .check {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 2px solid #ddd;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+  }
+
+  .lower-panel   .stretch-card.done .check { background: var(--lower);   border-color: var(--lower); }
+  .upper-panel   .stretch-card.done .check { background: var(--upper);   border-color: var(--upper); }
+  .cycling-panel .stretch-card.done .check { background: var(--cycling); border-color: var(--cycling); }
+  .rest-panel    .stretch-card.done .check { background: var(--rest);    border-color: var(--rest); }
+
+  .check svg { display: none; }
+  .stretch-card.done .check svg { display: block; }
+
+  .info { flex: 1; min-width: 0; }
+
+  .stretch-name {
+    font-weight: 600;
+    font-size: 0.92rem;
+    line-height: 1.3;
+  }
+
+  .stretch-cue {
+    font-size: 0.76rem;
+    color: var(--muted);
+    margin-top: 3px;
+    line-height: 1.4;
+  }
+
+  .right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
+
+  .duration-badge {
+    font-size: 0.73rem;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 20px;
+    white-space: nowrap;
+    text-align: center;
+  }
+
+  .lower-panel   .duration-badge { background: #e0f4f2; color: var(--lower); }
+  .upper-panel   .duration-badge { background: #e8f0fd; color: var(--upper); }
+  .cycling-panel .duration-badge { background: #e3f7ed; color: var(--cycling); }
+  .rest-panel    .duration-badge { background: #f0eafa; color: var(--rest); }
+
+  .intensity-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    margin-right: 2px;
+    display: inline-block;
+  }
+  .intensity { font-size: 0.68rem; color: #aaa; white-space: nowrap; }
+
+  .progress-wrap {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    height: 5px;
+    background: #e0dbd3;
+    z-index: 100;
+  }
+
+  .progress-bar {
+    height: 100%;
+    width: 0%;
+    transition: width 0.3s ease;
+  }
+
+  .summary {
+    text-align: center;
+    padding: 12px 20px 4px;
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+
+  .total-time {
+    text-align: center;
+    font-size: 0.78rem;
+    color: #bbb;
+    margin-bottom: 4px;
+    letter-spacing: 0.5px;
+  }
+
+  .reset-btn {
+    display: block;
+    margin: 14px auto 0;
+    padding: 11px 28px;
+    border-radius: 50px;
+    border: none;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+
+  .lower-panel   .reset-btn { background: var(--lower);   color: white; }
+  .upper-panel   .reset-btn { background: var(--upper);   color: white; }
+  .cycling-panel .reset-btn { background: var(--cycling); color: white; }
+  .rest-panel    .reset-btn { background: var(--rest);    color: white; }
+  .reset-btn:hover { opacity: 0.82; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Pre-Bed<br><em>Stretch Plan</em></h1>
+  <p>Tap each stretch to check it off</p>
+</header>
+
+<div class="tabs">
+  <button class="tab lower active"   onclick="switchTab('lower')">🦵 Lower</button>
+  <button class="tab upper"          onclick="switchTab('upper')">💪 Upper</button>
+  <button class="tab cycling"        onclick="switchTab('cycling')">🚴 Cycling</button>
+  <button class="tab rest"           onclick="switchTab('rest')">😴 Rest Day</button>
+</div>
+
+<!-- ═══════════════════ LOWER BODY ═══════════════════ -->
+<div class="panel lower-panel active" id="lower-panel">
+  <div class="total-time">~27 min · Days 1 & 4</div>
+
+  <div class="phase-label">🔥 Foam Roll — ~9 min</div>
+
+  <div class="stretch-card" onclick="toggle(this)">
+    <div class="check"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3.5 3.5 6-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="info"><div class="stretch-name">Quads</div><div class="stretch-cue">Face down, roll hip to knee. Pause on knots</div></div>
+    <div class="right"><div class="duration-badge">90 sec<br>each side</div><div class="intensity"><span class="intensity-dot" style="background:#0e8a7a"></span>Priority</div></div>
+  </div>
+
+  <div class="stretch-card" onclick="toggle(this)">
+    <div class="check"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3.5 3.5 6-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="info"><div class="stretch-name">Hamstrings</div><div class="stretch-cue">Cross one ankle over the other for more pressure</div></div>
+    <div class="right"><div class="duration-badge">90 sec<br>each side</div><div class="intensity"><span class="intensity-dot" style="background:#0e8a7a"></span>Priority</div></div>
+  </div>
+
+  <div class="stretch-card" onclick="toggle(this)">
+    <div class="check"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3.5 3.5 6-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="info"><div class="stretch-name">Glutes</div><div class="stretch-cue">Lean on hip, cross leg over — switch sides</div></div>
+    <div class="right"><div class="duration-badge">90 sec<br>each side</div><div class="intensity"><span class="intensity-dot" style="background:#0e8a7a"></span>Priority</div></div>
+  </div>
+
+  <div class="stretch-card" onclick="toggle(this)">
+    <div class="check"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3.5 3.5 6-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="info"><div class="stretch-name">Calves</div><div class="stretch-cue">Slow roll, ankle to knee</div></div>
+    <div class="right"><div class="duration-badge">60 sec<br>each side</div><div class="intensity"><span class="intensity-dot" style="background:#ccc"></span>Maintenance</div></div>
+  </div>
+
+  <div class="phase-label">🧘 Static Stretches — ~18 min</div>
+
+  <div class="stretch-card" onclick="toggle(this)">
+    <div class="check"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3.5 3.5 6-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="info"><div class="stretch-name">Hip Flexor Kneeling Lunge</div><div class="stretch-cue">Knee on floor, push hips forward, squeeze glute. Exhale into it</div></div>
+    <div class="right"><div class="duration-badge">90 sec<br>each side</div><div class="intensity"><span class="intensity-dot" style="background:#0e8a7a"></span>Priority</div></div>
+  </div>
+
+  <div class="stretch-card" onclick="toggle(this)">
+    <div class="check"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3.5 3.5 6-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="info"><div class="stretch-name">Hamstring Seated Forward Fold</div><div class="stretch-cue">Legs straight, back flat, hinge from hips. Exhale and sink deeper each breath</div></div>
+    <div class="right"><div class="duration-badge">90 sec<br>total</div><div class="intensity"><span class="intensity-dot" style="background:#0e8a7a"></span>Priority</div></div>
+  </div>
+
+  <div class="stretch-card" onclick="toggle(this)">
+    <div class="check"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3.5 3.5 6-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="info"><div class="stretch-name">Glutes Figure 4</div><div class="stretch-cue">On back, cross ankle over opposite knee, pull toward chest</div></div>
+    <div class="right"><div class="duration-badge">90 sec<br>each side</div><div class="intensity"><span class="intensity-dot" style="background:#0e8a7a"></span>Priority</div></div>
+  </div>
+
+  <div class="stretch-card" onclick="toggle(this)">
+    <div class="check"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3.5 3.5 6-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="info"><div class="stretch-name">Inner Thighs Butterfly</div><div class="stretch-cue">Soles together, gently press knees toward floor</div></div>
+    <div class="right"><div class="duration-badge">60 sec<br>total</div><div class="intensity"><span class="intensity-dot" style="background:#ccc"></span>Maintenance</div></div>
+  </div>
+
+  <div class="stretch-card" onclick="toggle(this)">
+    <div class="check"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3.5 3.5 6-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="info"><div class="stretch-name">Standing Quad Stretch</div><div class="stretch-cue">Hold ankle behind you, knees together, stand tall</div></div>
+    <div class="right"><div class="duration-badge">45 sec<br>each side</div><div class="intensity"><span class="intensity-dot" style="background:#ccc"></span>Maintenance</div></div>
+  </div>
+
+  <div class="stretch-card" onclick="toggle(this)">
+    <div class="check"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3.5 3.5 6-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="info"><div class="stretch-name">Calf Wall Stretch</div><div class="stretch-cue">Heel flat on floor, lean into wall</div></div>
+    <div class="right"><div class="duration-badge">45 sec<br>each side</div><div class="intensity"><span class="intensity-dot" style="background:#ccc"></span>Maintenance</div></div>
+  </div>
+
+  <div class="stretch-card" onclick="toggle(this)">
+    <div class="check"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3.5 3.5 6-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="info"><div class="stretch-name">Supine Spinal Twist</div><div class="stretch-cue">On back, pull knee across body, arms out wide</div></div>
+    <div class="right"><div class="duration-badge">60 sec<br>each side</div><div class="intensity"><span class="intensity-dot" style="background:#0e8a7a"></span>Priority</div></div>
+  </div>
+
+  <div class="stretch-card" onclick="toggle(this)">
+    <div class="check"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3.5 3.5 6-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="info"><div class="stretch-name">Child's Pose</div><div class="stretch-cue">Arms extended, sink hips to heels. Slow deep breaths</div></div>
+    <div class="right"><div class="duration-badge">60 sec<br>total</div><div class="intensity"><span class="intensity-dot" style="background:#ccc"></span>Recovery</div></div>
+  </div>
+
+  <div class="stretch-card" onclick="toggle(this)">
+    <div class="check"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3.5 3.5 6-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="info"><div class="stretch-name">Cat-Cow</div><div class="stretch-cue">10 slow breaths — arch on inhale, round on exhale</div></div>
+    <div class="right"><div class="duration-badge">60 sec<br>total</div><div class="intensity"><span class="intensity-dot" style="background:#ccc"></span>Recovery</div></div>
+  </div>
+
+  <div class="summary" id="lower-summary">0 of 13 complete</div>
+  <button class="reset-btn" onclick="resetPanel('lower')">Reset</button>
+</div>
+
+<!-- ═══════════════════ UPPER BODY ═══════════════════ -->
+<div class="panel upper-panel" id="upper-panel">
+  <div class="total-time">~24 min · Days 2 & 5</div>
+
+  <div class="phase-label">🔥 Foam Roll — ~7 min</div>
+
+  <div class="stretch-card" onclick="toggle(this)">
+    <div class="check"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3.5 3.5 6-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="info"><div class="stretch-name">Upper Back / Thoracic Spine</div><div class="stretch-cue">Arms crossed over chest, roll mid-back. Pause on stiff segments</div></div>
+    <div class="right"><div class="duration-badge">90 sec<br>total</div><div class="intensity"><span class="intensity-dot" style="background:#3a7ae8"></span>Priority</div></div>
+  </div>
+
+  <div class="stretch-card" onclick="toggle(this)">
+    <div class="check"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3.5 3.5 6-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="info"><div class="stretch-name">Lats</div><div class="stretch-cue">Lie on side, roll from armpit to mid-back</div></div>
+    <div class="right"><div class="duration-badge">90 sec<br>each side</div><div class="intensity"><span class="intensity-dot" style="background:#3a7ae8"></span>Priority</div></div>
+  </div>
+
+  <div class="stretch-card" onclick="toggle(this)">
+    <div class="check"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3.5 3.5 6-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="info"><div class="stretch-name">Pecs / Chest</div><div class="stretch-cue">Arm out to side, roll pec area gently</div></div>
+    <div class="right"><div class="duration-badge">60 sec<br>each side</div><div class="intensity"><span class="intensity-dot" style="background:#3a7ae8"></span>Priority</div></div>
+  </div>
+
+  <div class="phase-label">🧘 Static Stretches — ~17 min</div>
+
+  <div class="stretch-card" onclick="toggle(this)">
+    <div class="check"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3.5 3.5 6-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="info"><div class="stretch-name">Chest Doorway Stretch</div><div class="stretch-cue">Arms at 90°, lean gently through doorframe. Exhale into the stretch</div></div>
+    <div class="right"><div class="duration-badge">90 sec<br>total</div><div class="intensity"><span class="intensity-dot" style="background:#3a7ae8"></span>Priority</div></div>
+  </div>
+
+  <div class="stretch-card" onclick="toggle(this)">
+    <div class="check"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3.5 3.5 6-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="info"><div class="stretch-name">Lat Overhead Stretch</div><div class="stretch-cue">Arms overhead, clasp hands, lean slowly side to side</div></div>
+    <div class="right"><div class="duration-badge">60 sec<br>each side</div><div class="intensity"><span class="intensity-dot" style="background:#3a7ae8"></span>Priority</div></div>
+  </div>
+
+  <div class="stretch-card" onclick="toggle(this)">
+    <div class="check"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3.5 3.5 6-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="info"><div class="stretch-name">Cross-Body Shoulder Stretch</div><div class="stretch-cue">Pull arm across chest, hold at elbow</div></div>
+    <div class="right"><div class="duration-badge">45 sec<br>each side</div><div class="intensity"><span class="intensity-dot" style="background:#ccc"></span>Maintenance</div></div>
+  </div>
+
+  <div class="stretch-card" onclick="toggle(this)">
+    <div class="check"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3.5 3.5 6-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="info"><div class="stretch-name">Triceps Overhead Stretch</div><div class="stretch-cue">Elbow behind head, gently press down with other hand</div></div>
+    <div class="right"><div class="duration-badge">45 sec<br>each side</div><div class="intensity"><span class="intensity-dot" style="background:#ccc"></span>Maintenance</div></div>
+  </div>
+
+  <div class="stretch-card" onclick="toggle(this)">
+    <div class="check"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3.5 3.5 6-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="info"><div class="stretch-name">Biceps Wall Stretch</div><div class="stretch-cue">Palm on wall thumb down, slowly rotate body away</div></div>
+    <div class="right"><div class="duration-badge">45 sec<br>each side</div><div class="intensity"><span class="intensity-dot" style="background:#ccc"></span>Maintenance</div></div>
+  </div>
+
+  <div class="stretch-card" onclick="toggle(this)">
+    <div class="check"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3.5 3.5 6-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="info"><div class="stretch-name">Thread the Needle — Upper Back</div><div class="stretch-cue">On all fours, slide one arm under body until shoulder touches floor</div></div>
+    <div class="right"><div class="duration-badge">60 sec<br>each side</div><div class="intensity"><span class="intensity-dot" style="background:#3a7ae8"></span>Priority</div></div>
+  </div>
+
+  <div class="stretch-card" onclick="toggle(this)">
+    <div class="check"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3.5 3.5 6-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="info"><div class="stretch-name">Neck Side Stretch</div><div class="stretch-cue">Ear toward shoulder, light hand pressure. Breathe slowly</div></div>
+    <div class="right"><div class="duration-badge">45 sec<br>each side</div><div class="intensity"><span class="intensity-dot" style="background:#ccc"></span>Maintenance</div></div>
+  </div>
+
+  <div class="stretch-card" onclick="toggle(this)">
+    <div class="check"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3.5 3.5 6-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="info"><div class="stretch-name">Wrist Flexor & Extensor</div><div class="stretch-cue">Arm straight, bend wrist up then down. Hold each position</div></div>
+    <div class="right"><div class="duration-badge">30 sec<br>each side</div><div class="intensity"><span class="intensity-dot" style="background:#ccc"></span>Maintenance</div></div>
+  </div>
+
+  <div class="stretch-card" onclick="toggle(this)">
+    <div class="check"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3.5 3.5 6-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="info"><div class="stretch-name">Child's Pose with Side Reach</div><div class="stretch-cue">Walk hands left then right to open lats. Slow breaths</div></div>
+    <div class="right"><div class="duration-badge">60 sec<br>total</div><div class="intensity"><span class="intensity-dot" style="background:#ccc"></span>Recovery</div></div>
+  </div>
+
+  <div class="stretch-card" onclick="toggle(this)">
+    <div class="check"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3.5 3.5 6-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="info"><div class="stretch-name">Cat-Cow</div><div class="stretch-cue">10 slow breaths — arch on inhale, round on exhale</div></div>
+    <div class="right"><div class="duration-badge">60 sec<br>total</div><div class="intensity"><span class="intensity-dot" style="background:#ccc"></span>Recovery</div></div>
+  </div>
+
+  <div class="summary" id="upper-summary">0 of 13 complete</div>
+  <button class="reset-btn" onclick="resetPanel('upper')">Reset</button>
+</div>
+
+<!-- ═══════════════════ CYCLING ═══════════════════ -->
+<div class="panel cycling-panel" id="cycling-panel">
+  <div class="total-time">~26 min · Cycling Day</div>
+
+  <div class="phase-label">🔥 Foam Roll — ~7 min</div>
+
+  <div class="stretch-card" onclick="toggle(this)">
+    <div class="check"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3.5 3.5 6-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="info"><div class="stretch-name">Quads</div><div class="stretch-cue">Face down, roll hip to knee. Biggest priority after cycling</div></div>
+    <div class="right"><div class="duration-badge">90 sec<br>each side</div><div class="intensity"><span class="intensity-dot" style="background:#2daa6e"></span>Priority</div></div>
+  </div>
+
+  <div class="stretch-card" onclick="toggle(this)">
+    <div class="check"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3.5 3.5 6-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="info"><div class="stretch-name">Calves</div><div class="stretch-cue">Slow roll, ankle to knee. Heavily used in pedaling</div></div>
+    <div class="right"><div class="duration-badge">90 sec<br>each side</div><div class="intensity"><span class="intensity-dot" style="background:#2daa6e"></span>Priority</div></div>
+  </div>
+
+  <div class="stretch-card" onclick="toggle(this)">
+    <div class="check"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3.5 3.5 6-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="info"><div class="stretch-name">Upper Back / Thoracic Spine</div><div class="stretch-cue">Arms crossed, roll mid-back. Counteracts hunched riding position</div></div>
+    <div class="right"><div class="duration-badge">90 sec<br>total</div><div class="intensity"><span class="intensity-dot" style="background:#2daa6e"></span>Priority</div></div>
+  </div>
+
+  <div class="stretch-card" onclick="toggle(this)">
+    <div class="check"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3.5 3.5 6-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="info"><div class="stretch-name">Glutes / Piriformis</div><div class="stretch-cue">Lean on hip, cross leg over — switch sides</div></div>
+    <div class="right"><div class="duration-badge">60 sec<br>each side</div><div class="intensity"><span class="intensity-dot" style="background:#2daa6e"></span>Priority</div></div>
+  </div>
+
+  <div class="phase-label">🧘 Static Stretches — ~19 min</div>
+
+  <div class="stretch-card" onclick="toggle(this)">
+    <div class="check"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3.5 3.5 6-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="info"><div class="stretch-name">Hip Flexor Kneeling Lunge</div><div class="stretch-cue">Knee on floor, push hips forward, squeeze glute. Critical after cycling</div></div>
+    <div class="right"><div class="duration-badge">90 sec<br>each side</div><div class="intensity"><span class="intensity-dot" style="background:#2daa6e"></span>Priority</div></div>
+  </div>
+
+  <div class="stretch-card" onclick="toggle(this)">
+    <div class="check"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3.5 3.5 6-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="info"><div class="stretch-name">Chest Doorway Stretch</div><div class="stretch-cue">Arms at 90°, lean through doorframe. Reverses hunched bike posture</div></div>
+    <div class="right"><div class="duration-badge">90 sec<br>total</div><div class="intensity"><span class="intensity-dot" style="background:#2daa6e"></span>Priority</div></div>
+  </div>
+
+  <div class="stretch-card" onclick="toggle(this)">
+    <div class="check"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3.5 3.5 6-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="info"><div class="stretch-name">Hamstring Seated Forward Fold</div><div class="stretch-cue">Legs straight, back flat, reach forward. Exhale and sink deeper</div></div>
+    <div class="right"><div class="duration-badge">90 sec<br>total</div><div class="intensity"><span class="intensity-dot" style="background:#2daa6e"></span>Priority</div></div>
+  </div>
+
+  <div class="stretch-card" onclick="toggle(this)">
+    <div class="check"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3.5 3.5 6-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="info"><div class="stretch-name">Calf Wall Stretch</div><div class="stretch-cue">Heel flat on floor, lean into wall</div></div>
+    <div class="right"><div class="duration-badge">60 sec<br>each side</div><div class="intensity"><span class="intensity-dot" style="background:#ccc"></span>Maintenance</div></div>
+  </div>
+
+  <div class="stretch-card" onclick="toggle(this)">
+    <div class="check"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3.5 3.5 6-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="info"><div class="stretch-name">Neck Side Stretch</div><div class="stretch-cue">Ear toward shoulder — relieves neck tension from riding posture</div></div>
+    <div class="right"><div class="duration-badge">45 sec<br>each side</div><div class="intensity"><span class="intensity-dot" style="background:#ccc"></span>Maintenance</div></div>
+  </div>
+
+  <div class="stretch-card" onclick="toggle(this)">
+    <div class="check"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3.5 3.5 6-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="info"><div class="stretch-name">Glutes Figure 4</div><div class="stretch-cue">On back, cross ankle over opposite knee, pull toward chest</div></div>
+    <div class="right"><div class="duration-badge">60 sec<br>each side</div><div class="intensity"><span class="intensity-dot" style="background:#2daa6e"></span>Priority</div></div>
+  </div>
+
+  <div class="stretch-card" onclick="toggle(this)">
+    <div class="check"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3.5 3.5 6-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="info"><div class="stretch-name">Supine Spinal Twist</div><div class="stretch-cue">On back, pull knee across body, arms out wide</div></div>
+    <div class="right"><div class="duration-badge">60 sec<br>each side</div><div class="intensity"><span class="intensity-dot" style="background:#2daa6e"></span>Priority</div></div>
+  </div>
+
+  <div class="stretch-card" onclick="toggle(this)">
+    <div class="check"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3.5 3.5 6-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="info"><div class="stretch-name">Child's Pose</div><div class="stretch-cue">Arms extended, sink hips to heels. Slow deep breaths to wind down</div></div>
+    <div class="right"><div class="duration-badge">60 sec<br>total</div><div class="intensity"><span class="intensity-dot" style="background:#ccc"></span>Recovery</div></div>
+  </div>
+
+  <div class="summary" id="cycling-summary">0 of 12 complete</div>
+  <button class="reset-btn" onclick="resetPanel('cycling')">Reset</button>
+</div>
+
+<!-- ═══════════════════ REST DAY ═══════════════════ -->
+<div class="panel rest-panel" id="rest-panel">
+  <div class="total-time">~20 min · Rest Day — light & relaxing</div>
+
+  <div class="phase-label">🔥 Foam Roll — ~6 min (gentle pressure)</div>
+
+  <div class="stretch-card" onclick="toggle(this)">
+    <div class="check"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3.5 3.5 6-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="info"><div class="stretch-name">Upper Back / Thoracic Spine</div><div class="stretch-cue">Slow gentle roll, arms crossed. No need to pause hard on knots today</div></div>
+    <div class="right"><div class="duration-badge">60 sec<br>total</div><div class="intensity"><span class="intensity-dot" style="background:#7c5cbf"></span>Light</div></div>
+  </div>
+
+  <div class="stretch-card" onclick="toggle(this)">
+    <div class="check"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3.5 3.5 6-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="info"><div class="stretch-name">Glutes</div><div class="stretch-cue">Light pressure only — lean on hip, cross leg over. Switch sides</div></div>
+    <div class="right"><div class="duration-badge">60 sec<br>each side</div><div class="intensity"><span class="intensity-dot" style="background:#7c5cbf"></span>Light</div></div>
+  </div>
+
+  <div class="stretch-card" onclick="toggle(this)">
+    <div class="check"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3.5 3.5 6-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="info"><div class="stretch-name">Quads or Hamstrings</div><div class="stretch-cue">Roll whichever feels tightest from the week. Gentle pace</div></div>
+    <div class="right"><div class="duration-badge">60 sec<br>each side</div><div class="intensity"><span class="intensity-dot" style="background:#7c5cbf"></span>Light</div></div>
+  </div>
+
+  <div class="phase-label">🧘 Full Body Static — ~14 min</div>
+
+  <div class="stretch-card" onclick="toggle(this)">
+    <div class="check"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3.5 3.5 6-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="info"><div class="stretch-name">Hip Flexor Kneeling Lunge</div><div class="stretch-cue">Knee on floor, push hips forward. Focus on breathing, no forcing</div></div>
+    <div class="right"><div class="duration-badge">60 sec<br>each side</div><div class="intensity"><span class="intensity-dot" style="background:#7c5cbf"></span>Light</div></div>
+  </div>
+
+  <div class="stretch-card" onclick="toggle(this)">
+    <div class="check"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3.5 3.5 6-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="info"><div class="stretch-name">Hamstring Seated Forward Fold</div><div class="stretch-cue">Legs straight, hinge from hips. Relax into it — no pushing today</div></div>
+    <div class="right"><div class="duration-badge">60 sec<br>total</div><div class="intensity"><span class="intensity-dot" style="background:#7c5cbf"></span>Light</div></div>
+  </div>
+
+  <div class="stretch-card" onclick="toggle(this)">
+    <div class="check"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3.5 3.5 6-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="info"><div class="stretch-name">Glutes Figure 4</div><div class="stretch-cue">On back, cross ankle over opposite knee. Breathe slowly</div></div>
+    <div class="right"><div class="duration-badge">60 sec<br>each side</div><div class="intensity"><span class="intensity-dot" style="background:#7c5cbf"></span>Light</div></div>
+  </div>
+
+  <div class="stretch-card" onclick="toggle(this)">
+    <div class="check"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3.5 3.5 6-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="info"><div class="stretch-name">Chest Doorway Stretch</div><div class="stretch-cue">Arms at 90°, gentle lean. No forcing — just open the chest</div></div>
+    <div class="right"><div class="duration-badge">60 sec<br>total</div><div class="intensity"><span class="intensity-dot" style="background:#7c5cbf"></span>Light</div></div>
+  </div>
+
+  <div class="stretch-card" onclick="toggle(this)">
+    <div class="check"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3.5 3.5 6-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="info"><div class="stretch-name">Cross-Body Shoulder Stretch</div><div class="stretch-cue">Pull arm across chest gently. Both sides</div></div>
+    <div class="right"><div class="duration-badge">45 sec<br>each side</div><div class="intensity"><span class="intensity-dot" style="background:#7c5cbf"></span>Light</div></div>
+  </div>
+
+  <div class="stretch-card" onclick="toggle(this)">
+    <div class="check"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3.5 3.5 6-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="info"><div class="stretch-name">Neck Side Stretch</div><div class="stretch-cue">Ear toward shoulder, very light hand pressure. Both sides</div></div>
+    <div class="right"><div class="duration-badge">45 sec<br>each side</div><div class="intensity"><span class="intensity-dot" style="background:#7c5cbf"></span>Light</div></div>
+  </div>
+
+  <div class="stretch-card" onclick="toggle(this)">
+    <div class="check"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3.5 3.5 6-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="info"><div class="stretch-name">Supine Spinal Twist</div><div class="stretch-cue">On back, pull knee across body. Let gravity do the work, no forcing</div></div>
+    <div class="right"><div class="duration-badge">60 sec<br>each side</div><div class="intensity"><span class="intensity-dot" style="background:#7c5cbf"></span>Light</div></div>
+  </div>
+
+  <div class="stretch-card" onclick="toggle(this)">
+    <div class="check"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3.5 3.5 6-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="info"><div class="stretch-name">Child's Pose</div><div class="stretch-cue">Arms extended, sink hips to heels. 5 long slow breaths</div></div>
+    <div class="right"><div class="duration-badge">60 sec<br>total</div><div class="intensity"><span class="intensity-dot" style="background:#ccc"></span>Recovery</div></div>
+  </div>
+
+  <div class="stretch-card" onclick="toggle(this)">
+    <div class="check"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3.5 3.5 6-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="info"><div class="stretch-name">Cat-Cow</div><div class="stretch-cue">10 slow breaths — arch on inhale, round on exhale. End here, sleep well</div></div>
+    <div class="right"><div class="duration-badge">60 sec<br>total</div><div class="intensity"><span class="intensity-dot" style="background:#ccc"></span>Recovery</div></div>
+  </div>
+
+  <div class="summary" id="rest-summary">0 of 12 complete</div>
+  <button class="reset-btn" onclick="resetPanel('rest')">Reset</button>
+</div>
+
+<div class="progress-wrap">
+  <div class="progress-bar" id="progress-bar"></div>
+</div>
+
+<script>
+  let currentTab = 'lower';
+
+  function switchTab(tab) {
+    currentTab = tab;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.querySelector('.tab.' + tab).classList.add('active');
+    document.getElementById(tab + '-panel').classList.add('active');
+    updateProgress();
+  }
+
+  function toggle(card) {
+    card.classList.toggle('done');
+    updateProgress();
+  }
+
+  function updateProgress() {
+    const panel = document.getElementById(currentTab + '-panel');
+    const cards = panel.querySelectorAll('.stretch-card');
+    const done = panel.querySelectorAll('.stretch-card.done').length;
+    const pct = cards.length ? (done / cards.length) * 100 : 0;
+    const bar = document.getElementById('progress-bar');
+    bar.style.width = pct + '%';
+    const colors = { lower: '#0e8a7a', upper: '#3a7ae8', cycling: '#2daa6e', rest: '#7c5cbf' };
+    bar.style.background = colors[currentTab];
+    const summary = document.getElementById(currentTab + '-summary');
+    if (done === cards.length && done > 0) {
+      summary.textContent = '✅ All done! Sleep well 💤';
+      summary.style.color = colors[currentTab];
+      summary.style.fontWeight = '600';
+    } else {
+      summary.textContent = done + ' of ' + cards.length + ' complete';
+      summary.style.color = '#888';
+      summary.style.fontWeight = '400';
+    }
+  }
+
+  function resetPanel(tab) {
+    const panel = document.getElementById(tab + '-panel');
+    panel.querySelectorAll('.stretch-card').forEach(c => c.classList.remove('done'));
+    updateProgress();
+  }
+
+  updateProgress();
+</script>
+</body>
+</html>
