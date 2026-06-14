@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stretch Plan</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --lower: #0e8a7a; --upper: #3a7ae8; --cycling: #2daa6e; --rest: #7c5cbf; --deload: #c47b1a;
+    --bg: #f7f4ef; --card: #ffffff; --text: #1a1a1a; --muted: #888; --border: #e0dbd3;
+  }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding: 24px 16px 60px; }
+
+  .header { text-align: center; margin-bottom: 20px; }
+  .header-label { font-size: 11px; letter-spacing: 4px; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+  .header h1 { font-family: 'Bebas Neue', sans-serif; font-size: clamp(44px,12vw,68px); line-height: 0.9; }
+  .header h1 span { transition: color 0.3s; }
+  .meta-row { display: flex; justify-content: center; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  .meta-pill { border-radius: 100px; padding: 5px 14px; font-size: 12px; font-weight: 500; color: #fff; }
+
+  .tabs { display: flex; gap: 5px; margin-bottom: 12px; justify-content: center; flex-wrap: wrap; }
+  .tab { flex: 1; min-width: 60px; max-width: 100px; padding: 8px 4px; border-radius: 50px; border: 2px solid transparent; background: var(--card); font-family: 'DM Sans', sans-serif; font-size: 0.7rem; font-weight: 600; cursor: pointer; transition: all 0.2s; line-height: 1.3; text-align: center; }
+  .tab.lower   { color: var(--lower);   border-color: var(--lower); }
+  .tab.upper   { color: var(--upper);   border-color: var(--upper); }
+  .tab.cycling { color: var(--cycling); border-color: var(--cycling); }
+  .tab.rest    { color: var(--rest);    border-color: var(--rest); }
+  .tab.deload  { color: var(--deload);  border-color: var(--deload); }
+  .tab.lower.active   { background: var(--lower);   color: #fff; }
+  .tab.upper.active   { background: var(--upper);   color: #fff; }
+  .tab.cycling.active { background: var(--cycling); color: #fff; }
+  .tab.rest.active    { background: var(--rest);    color: #fff; }
+  .tab.deload.active  { background: var(--deload);  color: #fff; }
+  .tab:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .time-toggle { display: none; justify-content: center; margin-bottom: 12px; }
+  .time-toggle.visible { display: flex; }
+  .toggle-btn { padding: 7px 20px; font-family: 'DM Sans', sans-serif; font-size: 0.75rem; font-weight: 600; border: 2px solid var(--upper); background: var(--card); color: var(--upper); cursor: pointer; transition: all 0.2s; }
+  .toggle-btn:first-child { border-radius: 50px 0 0 50px; border-right: 1px solid var(--upper); }
+  .toggle-btn:last-child  { border-radius: 0 50px 50px 0; border-left:  1px solid var(--upper); }
+  .toggle-btn.active { background: var(--upper); color: #fff; }
+  .toggle-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .timer-sticky { position: sticky; top: 0; z-index: 50; padding-bottom: 10px; background: var(--bg); }
+  .timer-section { border-radius: 20px; padding: 16px 16px 14px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.15); transition: background 0.3s; }
+  .dot-row { display: flex; justify-content: center; gap: 5px; margin-bottom: 8px; flex-wrap: wrap; min-height: 9px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.2); transition: background 0.3s; }
+  .dot.active { background: #fff; }
+  .dot.done   { background: rgba(255,255,255,0.4); }
+  .timer-label { font-size: 10px; letter-spacing: 4px; text-transform: uppercase; color: rgba(255,255,255,0.6); margin-bottom: 1px; min-height: 13px; }
+  .timer-label.switch-mode { color: #ffe082; }
+  .timer-display { font-family: 'Bebas Neue', sans-serif; font-size: 76px; line-height: 1; color: #fff; letter-spacing: 3px; }
+  .timer-display.switch-mode { color: #ffe082; }
+  .timer-name { font-family: 'Bebas Neue', sans-serif; font-size: 19px; color: rgba(255,255,255,0.9); letter-spacing: 1px; margin: 2px 0 1px; min-height: 24px; }
+  .timer-breath  { font-size: 11px; color: rgba(255,255,255,0.55); font-style: italic; min-height: 16px; margin-bottom: 1px; }
+  .timer-repnote { font-size: 11px; color: rgba(255,255,255,0.75); font-weight: 600; min-height: 16px; margin-bottom: 1px; }
+  .timer-warning { font-size: 10px; color: #ffe082; min-height: 14px; margin-bottom: 2px; padding: 0 8px; }
+  .timer-progress { font-size: 11px; color: rgba(255,255,255,0.4); margin-bottom: 8px; min-height: 14px; }
+  .pbar-wrap { height: 4px; background: rgba(255,255,255,0.15); border-radius: 4px; margin-bottom: 12px; overflow: hidden; }
+  .pbar-fill { height: 100%; border-radius: 4px; transition: width 1s linear; width: 0%; background: rgba(255,255,255,0.7); }
+  .btn-row { display: flex; gap: 8px; justify-content: center; }
+  .btn { font-family: 'Bebas Neue', sans-serif; font-size: 16px; letter-spacing: 2px; padding: 10px 20px; border-radius: 10px; border: none; cursor: pointer; transition: opacity 0.15s, transform 0.1s; }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary   { background: #fff; }
+  .btn-secondary { background: rgba(255,255,255,0.15); color: #fff; }
+  .btn-danger    { background: transparent; border: 1px solid rgba(255,255,255,0.3); color: rgba(255,255,255,0.65); }
+
+  .section-title { font-family: 'Bebas Neue', sans-serif; font-size: 13px; letter-spacing: 4px; color: var(--muted); margin-bottom: 10px; padding-left: 2px; margin-top: 14px; }
+  .ex-list { display: flex; flex-direction: column; gap: 7px; }
+  .ex-card { background: var(--card); border: 2px solid var(--border); border-radius: 12px; padding: 11px 13px; display: flex; align-items: center; gap: 11px; position: relative; overflow: hidden; transition: border-color 0.2s, background 0.2s, opacity 0.4s, max-height 0.4s ease, padding 0.3s, margin 0.3s; max-height: 200px; }
+  .ex-card.active-ex { border-color: transparent; background: #fff; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+  .ex-card.done-ex { opacity: 0; max-height: 0 !important; padding-top: 0; padding-bottom: 0; margin-bottom: 0; border-width: 0; }
+  .ex-num { font-family: 'Bebas Neue', sans-serif; font-size: 20px; color: var(--muted); min-width: 26px; flex-shrink: 0; }
+  .ex-info { flex: 1; min-width: 0; }
+  .ex-name { font-weight: 600; font-size: 0.87rem; line-height: 1.3; }
+  .ex-note { font-size: 0.71rem; color: var(--muted); margin-top: 2px; line-height: 1.4; }
+  .ex-repnote { font-size: 0.69rem; color: #c47b1a; margin-top: 2px; font-weight: 600; }
+  .ex-warning { font-size: 0.67rem; color: #c47b00; margin-top: 3px; line-height: 1.4; background: #fff8ee; border-radius: 4px; padding: 2px 5px; }
+  .ex-dur { font-size: 0.69rem; font-weight: 700; padding: 3px 7px; border-radius: 20px; white-space: nowrap; text-align: center; flex-shrink: 0; }
+  .phase-divider { font-size: 10px; letter-spacing: 2.5px; text-transform: uppercase; color: var(--muted); padding: 12px 2px 3px; font-weight: 600; }
+
+  .done-overlay { display: none; position: fixed; inset: 0; background: rgba(247,244,239,0.97); flex-direction: column; align-items: center; justify-content: center; z-index: 100; text-align: center; padding: 32px; }
+  .done-overlay.show { display: flex; }
+  .done-title { font-family: 'Bebas Neue', sans-serif; font-size: 68px; line-height: 1; margin-bottom: 10px; }
+  .done-sub { color: var(--muted); font-size: 15px; margin-bottom: 28px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <p class="header-label">Recovery</p>
+  <h1>STRETCH<br><span id="dayLabel">LOWER</span></h1>
+  <div class="meta-row">
+    <span class="meta-pill" id="pillStretches"><strong>18</strong> Exercises</span>
+    <span class="meta-pill" id="pillTime"><strong>~30</strong> Min</span>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab lower active" onclick="switchDay('lower')">🦵 Lower</button>
+  <button class="tab upper"        onclick="switchDay('upper')">💪 Upper</button>
+  <button class="tab cycling"      onclick="switchDay('cycling')">🚴 Cycling</button>
+  <button class="tab rest"         onclick="switchDay('rest')">😴 Rest</button>
+  <button class="tab deload"       onclick="switchDay('deload')">🔄 Deload</button>
+</div>
+
+<div class="time-toggle" id="timeToggle">
+  <button class="toggle-btn active" id="toggleFive"  onclick="setTimeMode('5pm')">5 PM — Post Lifting</button>
+  <button class="toggle-btn"        id="toggleEight" onclick="setTimeMode('8:30pm')">8:30 PM — Pre Bed</button>
+</div>
+
+<div class="timer-sticky">
+  <div class="timer-section" id="timerSection">
+    <div class="dot-row"       id="dotRow"></div>
+    <div class="timer-label"   id="timerLabel">READY</div>
+    <div class="timer-display" id="timerDisplay">—</div>
+    <div class="timer-name"    id="timerName">Press Start</div>
+    <div class="timer-breath"  id="timerBreath"></div>
+    <div class="timer-repnote" id="timerRepNote"></div>
+    <div class="timer-warning" id="timerWarning"></div>
+    <div class="timer-progress" id="timerProgress"></div>
+    <div class="pbar-wrap"><div class="pbar-fill" id="pbarFill"></div></div>
+    <div class="btn-row">
+      <button class="btn btn-primary"   id="btnStart" onclick="startTimer()">START</button>
+      <button class="btn btn-secondary" id="btnPause" onclick="pauseTimer()" style="display:none">PAUSE</button>
+      <button class="btn btn-danger"    onclick="resetTimer()">RESET</button>
+    </div>
+  </div>
+</div>
+
+<p class="section-title">Exercises</p>
+<div class="ex-list" id="exList"></div>
+
+<div class="done-overlay" id="doneOverlay">
+  <div class="done-title" id="doneTitle">DONE!</div>
+  <div class="done-sub">Great work. Sleep well 💤</div>
+  <button class="btn btn-primary" onclick="resetTimer()" style="font-size:20px;padding:14px 36px;color:#333">RESTART</button>
+</div>
+
+<script>
+const BREATH = 'Inhale 4 sec · Exhale 6–8 sec';
+const ACHILLES_WARNING = 'Left Achilles priority — take extra care';
+
+const DAYS = {
+
+  lower: {
+    label:'LOWER', color:'#0e8a7a', time:'~32', phases:[
+      { phase:'🔥 Foam Roll', stretches:[
+        { name:'Quads',                           note:'Face down, roll hip to knee. Pause on knots',                                                                                       dur:60, bilateral:true  },
+        { name:'Hamstrings',                      note:'Cross ankle over other for more pressure',                                                                                           dur:60, bilateral:true  },
+        { name:'Glutes / Piriformis',             note:'Cover glute max, medius and piriformis. Cross leg over for deeper piriformis work. Extra attention left side if tight',             dur:90, bilateral:true  },
+        { name:'TFL — Front/Side of Hip',         note:'Focus on front/side of hip (TFL) — this influences IT band tension more than direct IT band rolling',                              dur:60, bilateral:true  },
+        { name:'Calves (Roller Stick)',           note:'Slow deliberate rolls. Pause on tight spots. Extra time on left side',                                                               dur:60, bilateral:true  },
+        { name:'Tibialis Anterior (Roller Stick)',note:'Sit with leg extended, roll front of shin from ankle to knee. Go slow — this area can be sensitive',                                dur:45, bilateral:true  },
+      ]},
+      { phase:'🧘 Static & Mobility', stretches:[
+        { name:'Hip Flexor Lunge',                note:'Knee on floor, push hips forward, squeeze glute',                                                                                  dur:60, bilateral:true,  breath:true },
+        { name:'Hamstring Forward Fold',          note:'Legs straight, hinge from hips. Keep back flat',                                                                                    dur:60, bilateral:false, breath:true },
+        { name:'Glutes Figure 4',                 note:'On back, cross ankle over opposite knee, pull toward chest',                                                                        dur:60, bilateral:true,  breath:true },
+        { name:'90/90 Hip Mobility',              note:'Sit with front leg at 90° and back leg at 90°. Upright torso. Gently lean forward over front shin',                               dur:60, bilateral:true,  breath:true },
+        { name:'Inner Thighs Butterfly',          note:'Soles together, gently press knees toward floor',                                                                                   dur:60, bilateral:false, breath:true },
+        { name:'Adductor Rock / Cossack Stretch', note:'Wide stance, shift weight side to side. Gentle rock. Keep one leg straight as you sink into the other',                            dur:60, bilateral:true,  breath:true },
+        { name:'Slant Board — Straight Knee',     note:'Full calf stretch, heel flat. Left side priority',                                                                                  dur:60, bilateral:true  },
+        { name:'Slant Board — Bent Knee',         note:'Targets soleus and Achilles. Extra time on left side',                                                                              dur:60, bilateral:true,  warning:ACHILLES_WARNING },
+        { name:'Standing Quad Stretch',           note:'Hold ankle behind you, knees together, stand tall',                                                                                 dur:45, bilateral:true  },
+        { name:'Thoracic Extension',              note:'Upper back over foam roller, arms crossed. Hold and breathe',                                                                       dur:60, bilateral:false },
+        { name:'Cat-Cow',                         note:'Arch on inhale, round on exhale',                                                                                                   dur:60, bilateral:false, breath:true },
+        { name:"Child's Pose",                    note:'Arms extended, sink hips to heels. Slow deep breaths',                                                                              dur:60, bilateral:false, breath:true },
+        { name:'Supine Spinal Twist',             note:'On back, pull knee across body, arms out wide',                                                                                     dur:60, bilateral:true,  breath:true },
+      ]},
+    ]
+  },
+
+  upper_5pm: {
+    label:'UPPER', color:'#3a7ae8', time:'~30', phases:[
+      { phase:'🔥 Foam Roll', stretches:[
+        { name:'Upper Back / Thoracic',           note:'Arms crossed over chest, roll mid-back. Pause on stiff segments',                                                                   dur:60, bilateral:false },
+        { name:'Lats',                            note:'Lie on side, roll from armpit to mid-back',                                                                                         dur:60, bilateral:true  },
+      ]},
+      { phase:'🏃 Mobility / Band Work', stretches:[
+        { name:'Thoracic Extension',              note:'Upper back over foam roller, arms crossed. Hold and breathe deeply',                                                                dur:60, bilateral:false },
+        { name:'Band Pass-Through',               note:'Arms straight, band from front to back overhead. Widen grip if uncomfortable',                                                     dur:60, bilateral:false, repnote:'Aim for 15–20 slow reps' },
+        { name:'Wall Slides',                     note:'Back against wall, arms at 90°. Slide up keeping full contact. Avoid shrugging',                                                   dur:30, bilateral:false, repnote:'Aim for 10 reps' },
+        { name:'Band Pull Apart',                 note:'Arms straight out front, pull band apart to sides. Squeeze shoulder blades',                                                       dur:45, bilateral:false, repnote:'Aim for 12 reps' },
+        { name:'Band External Rotation',          note:'Elbow at side at 90°, rotate forearm outward against band resistance',                                                             dur:45, bilateral:true,  repnote:'Aim for 12 reps each side' },
+        { name:'Cross-Body Rear Delt Stretch',    note:'Arm across chest at shoulder height, gently pull with other arm. Safe alternative to sleeper stretch',                             dur:45, bilateral:true,  breath:true },
+        { name:'Band Internal Rotation',          note:'Elbow at side at 90°, rotate forearm inward. Use light band only',                                                                 dur:45, bilateral:true,  repnote:'Aim for 10 reps each side' },
+        { name:'Band Distraction',                note:'Loop band around wrist, step away, let band gently pull arm. Decompresses shoulder joint',                                         dur:60, bilateral:true  },
+      ]},
+      { phase:'🧘 Static Stretches', stretches:[
+        { name:'Open Book Stretch',               note:'Side lying, knees at 90°. Top arm sweeps open following your eyes. Keep knees stacked',                                            dur:60, bilateral:true,  breath:true },
+        { name:'Pec Wall Stretch',                note:'Arm at 45° on wall or doorframe, rotate body away gently. Safer angle for shoulder',                                              dur:60, bilateral:true,  breath:true },
+        { name:'Doorway Bicep Stretch',           note:'Arm behind you at 45°, palm on wall, rotate body away gently',                                                                     dur:45, bilateral:true  },
+        { name:'Lat Overhead Stretch',            note:'Arms overhead, clasp hands, lean slowly side to side',                                                                             dur:60, bilateral:true,  breath:true },
+        { name:'Rear Delt Stretch',               note:'Arm across chest at shoulder height, hold at elbow',                                                                               dur:45, bilateral:true  },
+        { name:'Triceps Overhead',                note:'Elbow behind head, gently press down with other hand',                                                                              dur:45, bilateral:true  },
+        { name:'Thread the Needle',               note:'On all fours, slide one arm under body until shoulder touches floor',                                                              dur:60, bilateral:true,  breath:true },
+        { name:'Neck Side Stretch',               note:'Ear toward shoulder, light hand pressure. Breathe slowly',                                                                         dur:45, bilateral:true  },
+        { name:'Forearm Flexor Stretch',          note:'Arm straight, palm up, bend wrist down gently',                                                                                    dur:30, bilateral:true  },
+        { name:'Forearm Extensor Stretch',        note:'Arm straight, palm down, bend wrist down gently',                                                                                  dur:30, bilateral:true  },
+        { name:'Cat-Cow',                         note:'Arch on inhale, round on exhale',                                                                                                   dur:60, bilateral:false, breath:true },
+        { name:"Child's Pose",                    note:'Arms extended, sink hips to heels. Slow deep breaths',                                                                              dur:60, bilateral:false, breath:true },
+        { name:'Supine Spinal Twist',             note:'On back, pull knee across body, arms out wide',                                                                                     dur:60, bilateral:true,  breath:true },
+      ]},
+    ]
+  },
+
+  upper_830pm: {
+    label:'UPPER', color:'#3a7ae8', time:'~22', phases:[
+      { phase:'🔥 Foam Roll', stretches:[
+        { name:'Upper Back / Thoracic',           note:'Arms crossed over chest, roll mid-back. Slow and gentle tonight',                                                                   dur:60, bilateral:false },
+        { name:'Lats',                            note:'Lie on side, roll from armpit to mid-back',                                                                                         dur:60, bilateral:true  },
+      ]},
+      { phase:'🧘 Static — Wind Down', stretches:[
+        { name:'Thoracic Extension',              note:'Upper back over foam roller, arms crossed. Hold and breathe deeply',                                                                dur:90, bilateral:false },
+        { name:'Open Book Stretch',               note:'Side lying, knees at 90°. Top arm sweeps open following your eyes. Keep knees stacked',                                            dur:90, bilateral:true,  breath:true },
+        { name:'Pec Wall Stretch',                note:'Arm at 45° on wall, rotate body away gently',                                                                                      dur:60, bilateral:true,  breath:true },
+        { name:'Cross-Body Rear Delt Stretch',    note:'Arm across chest at shoulder height, gently pull with other arm',                                                                   dur:45, bilateral:true,  breath:true },
+        { name:'Lat Overhead Stretch',            note:'Arms overhead, clasp hands, lean slowly side to side',                                                                             dur:60, bilateral:true,  breath:true },
+        { name:'Neck Side Stretch',               note:'Ear toward shoulder, light hand pressure. Breathe slowly',                                                                         dur:45, bilateral:true  },
+        { name:'Thread the Needle',               note:'On all fours, slide one arm under body until shoulder touches floor',                                                              dur:60, bilateral:true,  breath:true },
+        { name:'Cat-Cow',                         note:'Arch on inhale, round on exhale. Very slow tonight',                                                                               dur:60, bilateral:false, breath:true },
+        { name:"Child's Pose",                    note:'Arms extended, sink hips to heels. Stay here a little longer',                                                                     dur:90, bilateral:false, breath:true },
+        { name:'Supine Spinal Twist',             note:'On back, pull knee across body. Let gravity do the work',                                                                          dur:90, bilateral:true,  breath:true },
+      ]},
+    ]
+  },
+
+  cycling: {
+    label:'CYCLING', color:'#2daa6e', time:'~32', phases:[
+      { phase:'🔥 Foam Roll', stretches:[
+        { name:'Quads',                           note:'Face down, roll hip to knee. Biggest priority after cycling',                                                                       dur:60, bilateral:true  },
+        { name:'Calves (Roller Stick)',           note:'Slow deliberate rolls. Extra time on left side. Pause on tight spots',                                                              dur:60, bilateral:true  },
+        { name:'Tibialis Anterior (Roller Stick)',note:'Sit with leg extended, roll front of shin from ankle to knee. Go slow',                                                             dur:45, bilateral:true  },
+        { name:'TFL — Front/Side of Hip',         note:'Focus on front/side of hip (TFL) — this influences IT band tension more than direct IT band rolling',                             dur:60, bilateral:true  },
+        { name:'Upper Back / Thoracic',           note:'Arms crossed, roll mid-back. Counteracts hunched posture',                                                                         dur:60, bilateral:false },
+        { name:'Glutes / Piriformis',             note:'Cover glute max, medius and piriformis. Cross leg over for deeper piriformis work',                                                dur:90, bilateral:true  },
+      ]},
+      { phase:'🧘 Static & Mobility', stretches:[
+        { name:'Thoracic Extension',              note:'Upper back over foam roller, arms crossed. Counteracts cycling posture',                                                            dur:60, bilateral:false },
+        { name:'Hip Flexor Lunge — Round 1',      note:'Knee on floor, push hips forward, squeeze glute. Critical after cycling',                                                          dur:60, bilateral:true,  breath:true },
+        { name:'Hip Flexor Lunge — Round 2',      note:'Deeper on round 2 — critical after cycling. Really sink into it this time',                                                       dur:60, bilateral:true,  breath:true },
+        { name:'Hamstring Forward Fold',          note:'Legs straight, back flat, reach forward. Hinge from hips',                                                                         dur:60, bilateral:false, breath:true },
+        { name:'Adductor Rock / Cossack Stretch', note:'Wide stance, shift weight side to side. Gentle rock. Keep one leg straight as you sink into the other',                            dur:60, bilateral:true,  breath:true },
+        { name:'Slant Board — Straight Knee',     note:'Full calf stretch, heel flat. Left side priority',                                                                                  dur:60, bilateral:true  },
+        { name:'Slant Board — Bent Knee',         note:'Targets soleus and Achilles. Extra time left side',                                                                                dur:60, bilateral:true,  warning:ACHILLES_WARNING },
+        { name:'Pigeon Pose (modified)',           note:'Front shin angled, back leg straight. Focus on hip flexor and TFL. Use cushion under hip if needed',                              dur:60, bilateral:true,  breath:true },
+        { name:'Cobra / Lower Back',              note:'Lie face down, press up through hands. Hold gently. Counteracts forward cycling lean',                                             dur:60, bilateral:false },
+        { name:'Neck Side Stretch',               note:'Ear toward shoulder — relieves tension from riding posture',                                                                       dur:45, bilateral:true  },
+        { name:'Glutes Figure 4',                 note:'On back, cross ankle over opposite knee, pull toward chest',                                                                       dur:60, bilateral:true,  breath:true },
+        { name:'Cat-Cow',                         note:'Arch on inhale, round on exhale',                                                                                                   dur:60, bilateral:false, breath:true },
+        { name:"Child's Pose",                    note:'Arms extended, sink hips to heels. Slow deep breaths',                                                                              dur:60, bilateral:false, breath:true },
+        { name:'Supine Spinal Twist',             note:'On back, pull knee across body, arms out wide',                                                                                     dur:60, bilateral:true,  breath:true },
+      ]},
+    ]
+  },
+
+  rest: {
+    label:'REST', color:'#7c5cbf', time:'~20', phases:[
+      { phase:'🔥 Foam Roll (gentle)', stretches:[
+        { name:'Upper Back',                      note:'Slow gentle roll, arms crossed. No need to pause hard on knots',                                                                    dur:60, bilateral:false },
+        { name:'Glutes / Piriformis',             note:'Light pressure only. Cross leg over for piriformis. Breathe slowly',                                                               dur:60, bilateral:true  },
+      ]},
+      { phase:'🧘 Full Body Static', stretches:[
+        { name:'Hip Flexor Lunge',                note:'Focus on breathing, no forcing today',                                                                                              dur:60, bilateral:true,  breath:true },
+        { name:'Hamstring Forward Fold',          note:'Relax into it — no pushing today',                                                                                                  dur:60, bilateral:false, breath:true },
+        { name:'Glutes Figure 4',                 note:'On back, breathe slowly. Let gravity do the work',                                                                                 dur:60, bilateral:true,  breath:true },
+        { name:'Slant Board — Bent Knee',         note:'Gentle Achilles recovery. Extra care on left side',                                                                                dur:60, bilateral:true,  warning:'Left Achilles priority — gentle only today' },
+        { name:'Chest Doorway Stretch',           note:'Arms at 90°, gentle lean. Just open the chest',                                                                                    dur:60, bilateral:false, breath:true },
+        { name:'Open Book Stretch',               note:'Side lying, knees at 90°. Top arm sweeps open following your eyes',                                                               dur:60, bilateral:true,  breath:true },
+        { name:'Neck Side Stretch',               note:'Ear toward shoulder, very light hand pressure',                                                                                    dur:45, bilateral:true  },
+        { name:'Cat-Cow',                         note:'Arch on inhale, round on exhale',                                                                                                   dur:60, bilateral:false, breath:true },
+        { name:"Child's Pose",                    note:'5 long slow breaths. Wind down',                                                                                                    dur:60, bilateral:false, breath:true },
+        { name:'Supine Spinal Twist',             note:'On back, pull knee across body. Let gravity do the work',                                                                          dur:60, bilateral:true,  breath:true },
+      ]},
+    ]
+  },
+
+  deload: {
+    label:'DELOAD', color:'#c47b1a', time:'~32', phases:[
+      { phase:'🔥 Foam Roll (gentle — full body)', stretches:[
+        { name:'Upper Back / Thoracic',           note:'Slow gentle roll, arms crossed. Pause on stiff segments',                                                                           dur:60, bilateral:false },
+        { name:'Lats',                            note:'Lie on side, roll from armpit to mid-back',                                                                                         dur:60, bilateral:true  },
+        { name:'Glutes / Piriformis',             note:'Cover glute max, medius and piriformis. Cross leg over for deeper work. Left side extra attention',                                dur:90, bilateral:true  },
+        { name:'TFL — Front/Side of Hip',         note:'Focus on front/side of hip (TFL) — this influences IT band tension more than direct IT band rolling',                             dur:60, bilateral:true  },
+        { name:'Quads',                           note:'Face down, roll hip to knee. Pause on knots',                                                                                       dur:60, bilateral:true  },
+        { name:'Hamstrings',                      note:'Cross ankle over other for more pressure',                                                                                           dur:60, bilateral:true  },
+        { name:'Calves (Roller Stick)',           note:'Slow deliberate rolls. Extra time on left side. Pause on tight spots',                                                               dur:60, bilateral:true  },
+        { name:'Tibialis Anterior (Roller Stick)',note:'Sit with leg extended, roll front of shin from ankle to knee. Go slow',                                                             dur:45, bilateral:true  },
+      ]},
+      { phase:'🏃 Light Band / Mobility', stretches:[
+        { name:'Thoracic Extension',              note:'Upper back over foam roller, arms crossed. Take extra time today',                                                                  dur:90, bilateral:false },
+        { name:'Band Pass-Through',               note:'Arms straight, band from front to back overhead. Very slow today',                                                                 dur:60, bilateral:false, repnote:'Aim for 15–20 slow reps' },
+        { name:'Band Pull Apart',                 note:'Arms straight out front, pull band apart. Light band only',                                                                        dur:45, bilateral:false, repnote:'Aim for 12 reps' },
+        { name:'Band External Rotation',          note:'Elbow at side at 90°, rotate forearm outward. Light band',                                                                        dur:45, bilateral:true,  repnote:'Aim for 12 reps each side' },
+        { name:'Cross-Body Rear Delt Stretch',    note:'Arm across chest at shoulder height, gently pull with other arm',                                                                  dur:45, bilateral:true,  breath:true },
+      ]},
+      { phase:'🧘 Full Body Static (longer holds)', stretches:[
+        { name:'Hip Flexor Lunge — Round 1',      note:'Knee on floor, push hips forward, squeeze glute. Take your time today',                                                            dur:90, bilateral:true,  breath:true },
+        { name:'Hip Flexor Lunge — Round 2',      note:'Second round — go deeper. Breathe into the stretch',                                                                              dur:90, bilateral:true,  breath:true },
+        { name:'Hamstring Forward Fold',          note:'Legs straight, hinge from hips. Longest hold of the week',                                                                         dur:90, bilateral:false, breath:true },
+        { name:'Glutes Figure 4',                 note:'On back, cross ankle over opposite knee, pull toward chest',                                                                       dur:90, bilateral:true,  breath:true },
+        { name:'90/90 Hip Mobility',              note:'Sit with front leg at 90° and back leg at 90°. Upright torso. Gently lean forward over front shin',                              dur:60, bilateral:true,  breath:true },
+        { name:'Adductor Rock / Cossack Stretch', note:'Wide stance, shift weight side to side. Gentle rock. Keep one leg straight as you sink into the other',                            dur:60, bilateral:true,  breath:true },
+        { name:'Slant Board — Straight Knee',     note:'Full calf stretch, heel flat. Left side priority',                                                                                  dur:60, bilateral:true  },
+        { name:'Slant Board — Bent Knee',         note:'Targets soleus and Achilles. Extra time on left side',                                                                             dur:60, bilateral:true,  warning:ACHILLES_WARNING },
+        { name:'Open Book Stretch',               note:'Side lying, knees at 90°. Top arm sweeps open following your eyes',                                                               dur:90, bilateral:true,  breath:true },
+        { name:'Pec Wall Stretch',                note:'Arm at 45° on wall, rotate body away gently',                                                                                      dur:60, bilateral:true,  breath:true },
+        { name:'Lat Overhead Stretch',            note:'Arms overhead, clasp hands, lean slowly side to side',                                                                             dur:60, bilateral:true,  breath:true },
+        { name:'Neck Side Stretch',               note:'Ear toward shoulder, light hand pressure. Breathe slowly',                                                                         dur:45, bilateral:true  },
+        { name:'Cat-Cow',                         note:'Arch on inhale, round on exhale. Take it slow today',                                                                              dur:90, bilateral:false, breath:true },
+        { name:"Child's Pose",                    note:'Arms extended, sink hips to heels. Stay here a little longer today',                                                               dur:90, bilateral:false, breath:true },
+        { name:'Supine Spinal Twist',             note:'On back, pull knee across body, arms out wide. Full deload wind-down',                                                             dur:90, bilateral:true,  breath:true },
+      ]},
+    ]
+  }
+};
+
+// ─── STATE ────────────────────────────────────────────────────────────────────
+let currentDay = localStorage.getItem('stretchDay') || 'lower';
+let upperTimeMode = localStorage.getItem('stretchTimeMode') || '5pm';
+let steps=[], stepIdx=0, timeLeft=0, running=false, interval=null;
+let wakeLock = null;
+
+// ─── WAKE LOCK ────────────────────────────────────────────────────────────────
+async function requestWakeLock() {
+  try {
+    if ('wakeLock' in navigator) {
+      wakeLock = await navigator.wakeLock.request('screen');
+    }
+  } catch(e) {}
+}
+async function releaseWakeLock() {
+  try { if (wakeLock) { await wakeLock.release(); wakeLock = null; } } catch(e) {}
+}
+// Re-acquire wake lock if page becomes visible again
+document.addEventListener('visibilitychange', async () => {
+  if (running && document.visibilityState === 'visible') await requestWakeLock();
+});
+
+// ─── HELPERS ─────────────────────────────────────────────────────────────────
+function getDayData() {
+  if (currentDay === 'upper') return DAYS[upperTimeMode === '5pm' ? 'upper_5pm' : 'upper_830pm'];
+  return DAYS[currentDay];
+}
+
+// ─── FLATTEN STEPS ───────────────────────────────────────────────────────────
+function flattenSteps() {
+  const data = getDayData();
+  const all = [];
+  data.phases.forEach(p => p.stretches.forEach(s => all.push(s)));
+  const out = [];
+  all.forEach((s, i) => {
+    if (s.bilateral) {
+      out.push({ type:'announce',        name:s.name, note:s.note, breath:!!s.breath, warning:s.warning||null, repnote:s.repnote||null, stretchNum:i });
+      out.push({ type:'hold',            name:s.name, note:s.note, breath:!!s.breath, warning:s.warning||null, repnote:s.repnote||null, dur:s.dur, stretchNum:i });
+      out.push({ type:'switch_announce', name:s.name, stretchNum:i });
+      out.push({ type:'hold',            name:s.name, note:s.note, breath:!!s.breath, warning:s.warning||null, repnote:s.repnote||null, dur:s.dur, stretchNum:i, isSecondSide:true });
+    } else {
+      out.push({ type:'announce', name:s.name, note:s.note, breath:!!s.breath, warning:s.warning||null, repnote:s.repnote||null, stretchNum:i });
+      out.push({ type:'hold',     name:s.name, note:s.note, breath:!!s.breath, warning:s.warning||null, repnote:s.repnote||null, dur:s.dur, stretchNum:i });
+    }
+  });
+  return out;
+}
+
+// ─── AUDIO ───────────────────────────────────────────────────────────────────
+let audioCtx;
+function getAudio() { if(!audioCtx) audioCtx=new(window.AudioContext||window.webkitAudioContext)(); return audioCtx; }
+function beep(freq,dur,type,vol) {
+  try {
+    const ctx=getAudio(),osc=ctx.createOscillator(),g=ctx.createGain();
+    osc.connect(g); g.connect(ctx.destination);
+    osc.type=type||'sine'; osc.frequency.setValueAtTime(freq,ctx.currentTime);
+    g.gain.setValueAtTime(vol||0.3,ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+dur);
+    osc.start(ctx.currentTime); osc.stop(ctx.currentTime+dur);
+  } catch(e){}
+}
+function playStartBeeps(cb) {
+  beep(660,0.12,'sine',0.28);
+  setTimeout(()=>beep(660,0.12,'sine',0.28),300);
+  setTimeout(()=>{ beep(880,0.2,'square',0.32); if(cb) setTimeout(cb,250); },600);
+}
+function playCountdown() { beep(660,0.08,'sine',0.2); }
+function playDone() { beep(880,0.1); setTimeout(()=>beep(1100,0.1),120); setTimeout(()=>beep(1320,0.35),240); }
+
+// ─── SPEECH ──────────────────────────────────────────────────────────────────
+function speak(text,rate) {
+  if(!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.rate=rate||1.0; u.pitch=1.0; u.volume=1.0;
+  window.speechSynthesis.speak(u);
+}
+
+// ─── TIME MODE TOGGLE ────────────────────────────────────────────────────────
+function setTimeMode(mode) {
+  if(running) return;
+  upperTimeMode = mode;
+  localStorage.setItem('stretchTimeMode', mode);
+  document.getElementById('toggleFive').classList.toggle('active', mode==='5pm');
+  document.getElementById('toggleEight').classList.toggle('active', mode==='8:30pm');
+  buildList(); resetTimer(true); updatePills();
+}
+
+function updatePills() {
+  const data = getDayData();
+  let count=0; data.phases.forEach(p=>count+=p.stretches.length);
+  const col = data.color;
+  document.getElementById('pillStretches').innerHTML=`<strong>${count}</strong> Exercises`;
+  document.getElementById('pillStretches').style.background=col;
+  document.getElementById('pillTime').innerHTML=`<strong>${data.time}</strong> Min`;
+  document.getElementById('pillTime').style.background=col;
+}
+
+// ─── SWITCH DAY ──────────────────────────────────────────────────────────────
+function switchDay(day) {
+  if(running) return;
+  currentDay = day;
+  localStorage.setItem('stretchDay', day);
+  const data = getDayData();
+  const col = data.color;
+  document.getElementById('dayLabel').textContent = data.label;
+  document.getElementById('dayLabel').style.color = col;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelector('.tab.'+day).classList.add('active');
+  document.getElementById('timerSection').style.background = col;
+  document.getElementById('btnStart').style.color = col;
+  document.getElementById('doneTitle') && (document.getElementById('doneTitle').style.color = col);
+  document.getElementById('timeToggle').classList.toggle('visible', day==='upper');
+  updatePills();
+  buildList();
+  resetTimer(true);
+}
+
+// ─── BUILD LIST ──────────────────────────────────────────────────────────────
+function buildList() {
+  const data = getDayData();
+  const col = data.color;
+  let si = 0;
+  const html = data.phases.map(p => {
+    const rows = p.stretches.map(s => {
+      const i = si++;
+      const dl = s.bilateral ? `${s.dur}s × 2` : `${s.dur}s`;
+      const warn = s.warning ? `<div class="ex-warning">⚠️ ${s.warning}</div>` : '';
+      const repn = s.repnote ? `<div class="ex-repnote">🎯 ${s.repnote}</div>` : '';
+      return `<div class="ex-card" id="excard-${i}">
+        <div class="ex-num">${String(i+1).padStart(2,'0')}</div>
+        <div class="ex-info">
+          <div class="ex-name">${s.name}</div>
+          <div class="ex-note">${s.note}</div>
+          ${repn}${warn}
+        </div>
+        <div class="ex-dur" style="background:${col}20;color:${col}">${dl}</div>
+      </div>`;
+    }).join('');
+    return `<div class="phase-divider">${p.phase}</div>${rows}`;
+  }).join('');
+  document.getElementById('exList').innerHTML = html;
+  let c=0; data.phases.forEach(p=>c+=p.stretches.length);
+  buildDots(c);
+}
+
+// ─── DOTS ────────────────────────────────────────────────────────────────────
+function buildDots(count) {
+  document.getElementById('dotRow').innerHTML =
+    Array.from({length:count},(_,i)=>`<div class="dot" id="dot${i}"></div>`).join('');
+}
+function updateDots(sNum) {
+  const data = getDayData();
+  let c=0; data.phases.forEach(p=>c+=p.stretches.length);
+  for(let i=0;i<c;i++){
+    const d=document.getElementById('dot'+i); if(!d) continue;
+    d.className='dot'+(i<sNum?' done':i===sNum?' active':'');
+  }
+}
+
+// ─── HIGHLIGHT + COLLAPSE ────────────────────────────────────────────────────
+function highlightCard(sNum) {
+  const data = getDayData();
+  const col = data.color;
+  let c=0; data.phases.forEach(p=>c+=p.stretches.length);
+  for(let i=0;i<c;i++){
+    const card=document.getElementById('excard-'+i); if(!card) continue;
+    card.classList.remove('active-ex','done-ex');
+    card.style.borderLeftColor='';
+    if(i<sNum) card.classList.add('done-ex');
+  }
+  const ac=document.getElementById('excard-'+sNum);
+  if(ac){
+    ac.classList.add('active-ex');
+    ac.style.borderLeftColor=col;
+    setTimeout(()=>ac.scrollIntoView({behavior:'smooth',block:'nearest'}),150);
+  }
+}
+
+// ─── TIMER CONTROLS ──────────────────────────────────────────────────────────
+function startTimer() {
+  try{ getAudio().resume(); }catch(e){}
+  if(running) return;
+  steps = flattenSteps();
+  stepIdx=0; running=true;
+  requestWakeLock();
+  document.querySelectorAll('.tab').forEach(t=>t.disabled=true);
+  document.getElementById('toggleFive').disabled=true;
+  document.getElementById('toggleEight').disabled=true;
+  document.getElementById('btnStart').style.display='none';
+  document.getElementById('btnPause').style.display='inline-block';
+  processStep();
+  interval=setInterval(tick,1000);
+}
+
+function pauseTimer() {
+  if(running){
+    clearInterval(interval); running=false;
+    releaseWakeLock();
+    document.getElementById('btnPause').textContent='RESUME';
+  } else {
+    running=true;
+    requestWakeLock();
+    document.getElementById('btnPause').textContent='PAUSE';
+    interval=setInterval(tick,1000);
+  }
+}
+
+function resetTimer(silent) {
+  clearInterval(interval); running=false; stepIdx=0; steps=[];
+  releaseWakeLock();
+  if(window.speechSynthesis) window.speechSynthesis.cancel();
+  document.querySelectorAll('.tab').forEach(t=>t.disabled=false);
+  document.getElementById('toggleFive').disabled=false;
+  document.getElementById('toggleEight').disabled=false;
+  document.getElementById('btnStart').style.display='inline-block';
+  document.getElementById('btnPause').style.display='none';
+  document.getElementById('btnPause').textContent='PAUSE';
+  document.getElementById('timerLabel').textContent='READY';
+  document.getElementById('timerLabel').className='timer-label';
+  document.getElementById('timerDisplay').textContent='—';
+  document.getElementById('timerDisplay').className='timer-display';
+  document.getElementById('timerName').textContent='Press Start';
+  document.getElementById('timerBreath').textContent='';
+  document.getElementById('timerRepNote').textContent='';
+  document.getElementById('timerWarning').textContent='';
+  document.getElementById('timerProgress').textContent='';
+  document.getElementById('pbarFill').style.width='0%';
+  document.getElementById('doneOverlay').classList.remove('show');
+  document.querySelectorAll('.ex-card').forEach(c=>{
+    c.classList.remove('active-ex','done-ex');
+    c.style.borderLeftColor=''; c.style.maxHeight='';
+  });
+  updateDots(-1);
+}
+
+// ─── PROCESS STEP ────────────────────────────────────────────────────────────
+function processStep() {
+  if(stepIdx>=steps.length){ finishSession(); return; }
+  const step = steps[stepIdx];
+  const data = getDayData();
+  let total=0; data.phases.forEach(p=>total+=p.stretches.length);
+
+  updateDots(step.stretchNum);
+  highlightCard(step.stretchNum);
+  document.getElementById('timerProgress').textContent=`Exercise ${step.stretchNum+1} of ${total}`;
+  document.getElementById('timerName').textContent=step.name;
+  document.getElementById('timerWarning').textContent=step.warning?'⚠️ '+step.warning:'';
+  document.getElementById('timerRepNote').textContent=step.repnote?'🎯 '+step.repnote:'';
+
+  if(step.type==='announce'||step.type==='switch_announce') {
+    const isSwitch = step.type==='switch_announce';
+    document.getElementById('timerLabel').textContent = isSwitch?'SWITCH SIDES':'GET READY';
+    document.getElementById('timerLabel').className = 'timer-label'+(isSwitch?' switch-mode':'');
+    document.getElementById('timerDisplay').textContent='•••';
+    document.getElementById('timerDisplay').className='timer-display'+(isSwitch?' switch-mode':'');
+    document.getElementById('timerBreath').textContent='';
+    document.getElementById('pbarFill').style.width='0%';
+    speak(isSwitch?'Switch sides':step.name);
+    // 5s silence then 3 beeps then start hold
+    setTimeout(()=>{ playStartBeeps(()=>{ stepIdx++; processStep(); }); }, 5000);
+
+  } else if(step.type==='hold') {
+    timeLeft=step.dur;
+    document.getElementById('timerLabel').textContent='HOLD';
+    document.getElementById('timerLabel').className='timer-label';
+    document.getElementById('timerDisplay').textContent=timeLeft;
+    document.getElementById('timerDisplay').className='timer-display';
+    document.getElementById('timerBreath').textContent=step.breath?BREATH:'';
+    document.getElementById('pbarFill').style.width='0%';
+  }
+}
+
+// ─── TICK ────────────────────────────────────────────────────────────────────
+function tick() {
+  const step = steps[stepIdx];
+  if(!step||step.type==='announce'||step.type==='switch_announce') return;
+  if(timeLeft<=3&&timeLeft>0) playCountdown();
+  if(timeLeft<=1){
+    stepIdx++;
+    if(stepIdx>=steps.length){ finishSession(); return; }
+    processStep();
+    return;
+  }
+  timeLeft--;
+  document.getElementById('timerDisplay').textContent=timeLeft;
+  if(step.dur){
+    const elapsed=step.dur-timeLeft;
+    document.getElementById('pbarFill').style.width=((elapsed/step.dur)*100)+'%';
+  }
+}
+
+// ─── FINISH ──────────────────────────────────────────────────────────────────
+function finishSession() {
+  clearInterval(interval); running=false;
+  releaseWakeLock();
+  document.getElementById('doneOverlay').classList.add('show');
+  playDone();
+  setTimeout(()=>speak('All done. Great work.'),500);
+}
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+// Restore toggle state
+if(upperTimeMode==='8:30pm'){
+  document.getElementById('toggleFive').classList.remove('active');
+  document.getElementById('toggleEight').classList.add('active');
+}
+switchDay(currentDay);
+</script>
+</body>
+</html>
